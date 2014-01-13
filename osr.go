@@ -4,7 +4,8 @@ package gdal
 #include "go_gdal.h"
 #include "gdal_version.h"
 
-#cgo linux  pkg-config: gdal
+#cgo linux  CFLAGS: -I/usr/include/gdal
+#cgo linux  LDFLAGS: -lgdal
 #cgo darwin pkg-config: gdal
 #cgo windows LDFLAGS: -lgdal.dll
 */
