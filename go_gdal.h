@@ -10,6 +10,7 @@
 #include <gdalwarper.h>
 #include <cpl_conv.h>
 #include <ogr_srs_api.h>
+#include <cpl_vsi.h>
 
 // transform GDALProgressFunc to go func
 GDALProgressFunc goGDALProgressFuncProxyB();
