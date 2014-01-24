@@ -3,7 +3,7 @@ Package gdal provides a wrapper for GDAL, the Geospatial Data Abstraction Librar
 
 Limitations
 
-Some less oftenly used functions are not yet implemented.  The majoriry of these involve style tables, asynchronous I/O, and GCPs.
+Some less oftenly used functions are not yet implemented.  The majority of these involve style tables, asynchronous I/O, and GCPs.
 
 The documentation is fairly limited, but the functionality fairly closely matches that of the C++ api.
 
