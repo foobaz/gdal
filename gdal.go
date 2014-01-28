@@ -739,11 +739,6 @@ func (dataset Dataset) IO(
 		return fmt.Errorf("Error: buffer is not a valid data type (must be a valid numeric slice)")
 	}
 
-	var bandPtr unsafe.Pointer
-	if bandMap != nil {
-		bandPtr = unsafe.Pointer(&bandMap[0])
-	}
-
 	err := C.GDALDatasetRasterIO(
 		dataset.cval,
 		C.GDALRWFlag(rwFlag),
@@ -752,7 +747,7 @@ func (dataset Dataset) IO(
 		C.int(bufXSize), C.int(bufYSize),
 		C.GDALDataType(dataType),
 		C.int(bandCount),
-		(*C.int)(bandPtr),
+		(*C.int)(unsafe.Pointer(&bandMap[0])),
 		C.int(pixelSpace), C.int(lineSpace), C.int(bandSpace))
 	if err != 0 {
 		return error(err)
@@ -1159,6 +1154,10 @@ func (rasterBand RasterBand) SetNoDataValue(val float64) error {
 // Fetch the list of category names for this raster
 func (rasterBand RasterBand) CategoryNames() []string {
 	p := C.GDALGetRasterCategoryNames(rasterBand.cval)
+	if p == nil {
+		return nil
+	}
+
 	var strings []string
 	q := uintptr(unsafe.Pointer(p))
 	for {
