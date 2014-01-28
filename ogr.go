@@ -1309,7 +1309,7 @@ func (layer Layer) SetSpatialFilter(filter Geometry) {
 	C.OGR_L_SetSpatialFilter(layer.cval, filter.cval)
 }
 
-// Set a new rectangular spatial filter for this layer 
+// Set a new rectangular spatial filter for this layer
 func (layer Layer) SetSpatialFilterRect(minX, minY, maxX, maxY float64) {
 	C.OGR_L_SetSpatialFilterRect(
 		layer.cval,

@@ -18,8 +18,6 @@ import (
 type VSILFile *C.VSILFILE
 type VSIStatBufL C.VSIStatBufL
 
-
-
 // Open file.
 //
 // This function opens a file with the desired access. Large files (larger than 2GB) should be supported. Binary access is always implied and the "b" does not need to be included in the pszAccess string.
@@ -35,7 +33,7 @@ type VSIStatBufL C.VSIStatBufL
 //	access 	access requested (ie. "r", "r+", "w".
 //
 // Returns:
-//	NULL on failure, or the file handle. 
+//	NULL on failure, or the file handle.
 func VSIFOpenL(filename, access string) VSILFile {
 	pszFilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(pszFilename))
@@ -59,7 +57,7 @@ func VSIFOpenL(filename, access string) VSILFile {
 //	fp 	file handle opened with VSIFOpenL().
 //
 // Returns:
-//	True on success or false on failure. 
+//	True on success or false on failure.
 func VSIFCloseL(fp VSILFile) int {
 	result := C.VSIFCloseL((*C.VSILFILE)(fp))
 	return int(result)
@@ -79,7 +77,7 @@ func VSIFCloseL(fp VSILFile) int {
 //	whence 	one of SEEK_SET, SEEK_CUR or SEEK_END.
 //
 // Returns:
-//	True on success or false on failure. 
+//	True on success or false on failure.
 func VSIFSeekL(fp VSILFile, offset, whence int) bool {
 	err := C.VSIFSeekL((*C.VSILFILE)(fp), C.vsi_l_offset(offset), C.int(whence))
 	return err == 0
@@ -97,7 +95,7 @@ func VSIFSeekL(fp VSILFile, offset, whence int) bool {
 //	fp 	file handle opened with VSIFOpenL().
 //
 // Returns:
-//	file offset in bytes. 
+//	file offset in bytes.
 func VSIFTellL(fp VSILFile) int {
 	offset := C.VSIFTellL((*C.VSILFILE)(fp))
 	return int(offset)
@@ -123,7 +121,7 @@ func VSIRewindL(fp VSILFile) {
 //	fp 	file handle opened with VSIFOpenL().
 //
 // Returns:
-//	number of objects successfully read. 
+//	number of objects successfully read.
 func VSIFReadL(buffer []byte, size, count int, fp VSILFile) int {
 	nRead := C.VSIFReadL(unsafe.Pointer(&buffer[0]), C.size_t(size), C.size_t(count), (*C.VSILFILE)(fp))
 	return int(nRead)
@@ -179,7 +177,7 @@ func VSIFEofL(fp VSILFile) bool {
 //	newSize 	new size in bytes.
 //
 // Returns:
-//	True on success or false on error. 
+//	True on success or false on error.
 func VSIFTruncateL(fp VSILFile, newSize int) bool {
 	err := C.VSIFTruncateL((*C.VSILFILE)(fp), C.vsi_l_offset(newSize))
 	return err == 0

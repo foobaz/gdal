@@ -43,8 +43,12 @@ func (sr SpatialReference) FromWKT(wkt string) error {
 func (sr SpatialReference) ToWKT() (string, error) {
 	var p *C.char
 	err := C.OSRExportToWkt(sr.cval, &p)
+	if err != 0 {
+		return "", error(err)
+	}
+
 	wkt := C.GoString(p)
-	return wkt, error(err)
+	return wkt, nil
 }
 
 // Export coordinate system to a nicely formatted WKT string
