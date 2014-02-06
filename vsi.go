@@ -58,9 +58,9 @@ func VSIFOpenL(filename, access string) VSILFile {
 //
 // Returns:
 //	True on success or false on failure.
-func VSIFCloseL(fp VSILFile) int {
-	result := C.VSIFCloseL((*C.VSILFILE)(fp))
-	return int(result)
+func VSIFCloseL(fp VSILFile) bool {
+	err := C.VSIFCloseL((*C.VSILFILE)(fp))
+	return err == 0
 }
 
 // Seek to requested offset.

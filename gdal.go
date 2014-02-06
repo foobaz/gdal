@@ -571,7 +571,7 @@ func (object MajorObject) SetMetadataItem(name, value, domain string) {
 	return
 }
 
-// TODO: Make korrekt class hirerarchy via interfaces
+// TODO: Make correct class hirerarchy via interfaces
 
 func (object *RasterBand) SetMetadataItem(name, value, domain string) error {
 	c_name := C.CString(name)
@@ -591,7 +591,38 @@ func (object *RasterBand) SetMetadataItem(name, value, domain string) error {
 	return nil
 }
 
-// TODO: Make korrekt class hirerarchy via interfaces
+func (object *RasterBand) GetMetadata(domain string) []string {
+	c_domain := C.CString(domain)
+	defer C.free(unsafe.Pointer(c_domain))
+
+	stringArray := C.GDALGetMetadata((C.GDALMajorObjectH)(unsafe.Pointer(object.cval)), c_domain)
+	if stringArray == nil {
+		return nil
+	}
+
+	stringPointer := uintptr(unsafe.Pointer(stringArray))
+	stringIndex := stringPointer
+	pointerSize := unsafe.Sizeof(stringPointer)
+	var stringCount uintptr
+	for {
+		if *(*uintptr)(unsafe.Pointer(stringIndex)) == 0 {
+			break
+		}
+
+		stringIndex += pointerSize
+		stringCount++
+	}
+
+	stringSlice := make([]string, stringCount)
+	for i := uintptr(0); i < stringCount; i++ {
+		stringIndex = stringPointer + i * pointerSize
+		stringSlice[i] = C.GoString((*C.char)(unsafe.Pointer(stringIndex)))
+	}
+
+	return stringSlice
+}
+
+// TODO: Make correct class hirerarchy via interfaces
 
 func (object *Dataset) SetMetadataItem(name, value, domain string) error {
 	c_name := C.CString(name)
@@ -609,6 +640,37 @@ func (object *Dataset) SetMetadataItem(name, value, domain string) error {
 	}
 
 	return nil
+}
+
+func (object *Dataset) GetMetadata(domain string) []string {
+	c_domain := C.CString(domain)
+	defer C.free(unsafe.Pointer(c_domain))
+
+	stringArray := C.GDALGetMetadata((C.GDALMajorObjectH)(unsafe.Pointer(object.cval)), c_domain)
+	if stringArray == nil {
+		return nil
+	}
+
+	stringPointer := uintptr(unsafe.Pointer(stringArray))
+	stringIndex := stringPointer
+	pointerSize := unsafe.Sizeof(stringPointer)
+	var stringCount uintptr
+	for {
+		if *(*uintptr)(unsafe.Pointer(stringIndex)) == 0 {
+			break
+		}
+
+		stringIndex += pointerSize
+		stringCount++
+	}
+
+	stringSlice := make([]string, stringCount)
+	for i := uintptr(0); i < stringCount; i++ {
+		stringIndex = stringPointer + i * pointerSize
+		stringSlice[i] = C.GoString((*C.char)(unsafe.Pointer(stringIndex)))
+	}
+
+	return stringSlice
 }
 
 /* ==================================================================== */
