@@ -1,8 +1,9 @@
 package gdal
 
 /*
-#include "go_gdal.h"
+#include "cpl_string.h"
 #include "gdal_version.h"
+#include "go_gdal.h"
 
 #cgo linux  CFLAGS: -I/usr/include/gdal
 #cgo linux  LDFLAGS: -lgdal
@@ -533,28 +534,22 @@ func (driver Driver) CopyDatasetFiles(newName, oldName string) error {
 /* ==================================================================== */
 
 // Fetch object description
-func (object MajorObject) Description() string {
-	cObject := object.cval
-	desc := C.GoString(C.GDALGetDescription(cObject))
-	return desc
+func (o MajorObject) Description() string {
+	return description(unsafe.Pointer(o.cval))
 }
 
 // Set object description
-func (object MajorObject) SetDescription(desc string) {
-	cObject := object.cval
-	cDesc := C.CString(desc)
-	defer C.free(unsafe.Pointer(cDesc))
-	C.GDALSetDescription(cObject, cDesc)
+func (o MajorObject) SetDescription(desc string) {
+	setDescription(unsafe.Pointer(o.cval), desc)
 }
 
-// Fetch metadata
-func (object MajorObject) Metadata(domain string) []string {
-	panic("not implemented!")
-	return nil
+// Fetch metadata, typically pass "" for default domain
+func (o MajorObject) Metadata(domain string) map[string]string {
+	return metadata(unsafe.Pointer(o.cval), domain)
 }
 
 // Set metadata
-func (object MajorObject) SetMetadata(metadata []string, domain string) {
+func (object MajorObject) SetMetadata(metadata map[string]string, domain string) {
 	panic("not implemented!")
 	return
 }
@@ -566,111 +561,48 @@ func (object MajorObject) MetadataItem(name, domain string) string {
 }
 
 // Set a single metadata item
-func (object MajorObject) SetMetadataItem(name, value, domain string) {
-	panic("not implemented!")
-	return
+func (o MajorObject) SetMetadataItem(name, value, domain string) error {
+	return setMetadataItem(unsafe.Pointer(o.cval), name, value, domain)
 }
 
-// TODO: Make correct class hirerarchy via interfaces
-
-func (object *RasterBand) SetMetadataItem(name, value, domain string) error {
-	c_name := C.CString(name)
-	defer C.free(unsafe.Pointer(c_name))
-
-	c_value := C.CString(value)
-	defer C.free(unsafe.Pointer(c_value))
-
-	c_domain := C.CString(domain)
-	defer C.free(unsafe.Pointer(c_domain))
-
-	err := C.GDALSetMetadataItem((C.GDALMajorObjectH)(unsafe.Pointer(object.cval)), c_name, c_value, c_domain)
-	if err != 0 {
-		return error(err)
-	}
-
-	return nil
+// Fetch object description
+func (r RasterBand) Description() string {
+	return description(unsafe.Pointer(r.cval))
 }
 
-func (object *RasterBand) GetMetadata(domain string) []string {
-	c_domain := C.CString(domain)
-	defer C.free(unsafe.Pointer(c_domain))
-
-	stringArray := C.GDALGetMetadata((C.GDALMajorObjectH)(unsafe.Pointer(object.cval)), c_domain)
-	if stringArray == nil {
-		return nil
-	}
-
-	stringPointer := uintptr(unsafe.Pointer(stringArray))
-	stringIndex := stringPointer
-	pointerSize := unsafe.Sizeof(stringPointer)
-	var stringCount uintptr
-	for {
-		if *(*uintptr)(unsafe.Pointer(stringIndex)) == 0 {
-			break
-		}
-
-		stringIndex += pointerSize
-		stringCount++
-	}
-
-	stringSlice := make([]string, stringCount)
-	for i := uintptr(0); i < stringCount; i++ {
-		stringIndex = stringPointer + i * pointerSize
-		stringSlice[i] = C.GoString((*C.char)(unsafe.Pointer(stringIndex)))
-	}
-
-	return stringSlice
+// Set object description
+func (r RasterBand) SetDescription(desc string) {
+	setDescription(unsafe.Pointer(r.cval), desc)
 }
 
-// TODO: Make correct class hirerarchy via interfaces
-
-func (object *Dataset) SetMetadataItem(name, value, domain string) error {
-	c_name := C.CString(name)
-	defer C.free(unsafe.Pointer(c_name))
-
-	c_value := C.CString(value)
-	defer C.free(unsafe.Pointer(c_value))
-
-	c_domain := C.CString(domain)
-	defer C.free(unsafe.Pointer(c_domain))
-
-	err := C.GDALSetMetadataItem((C.GDALMajorObjectH)(unsafe.Pointer(object.cval)), c_name, c_value, c_domain)
-	if err != 0 {
-		return error(err)
-	}
-
-	return nil
+// Set a single metadata item
+func (r RasterBand) SetMetadataItem(name, value, domain string) error {
+	return setMetadataItem(unsafe.Pointer(r.cval), name, value, domain)
 }
 
-func (object *Dataset) GetMetadata(domain string) []string {
-	c_domain := C.CString(domain)
-	defer C.free(unsafe.Pointer(c_domain))
+// Fetch metadata, typically pass "" for default domain
+func (r RasterBand) Metadata(domain string) map[string]string {
+	return metadata(unsafe.Pointer(r.cval), domain)
+}
 
-	stringArray := C.GDALGetMetadata((C.GDALMajorObjectH)(unsafe.Pointer(object.cval)), c_domain)
-	if stringArray == nil {
-		return nil
-	}
+// Fetch object description
+func (d Dataset) Description() string {
+	return description(unsafe.Pointer(d.cval))
+}
 
-	stringPointer := uintptr(unsafe.Pointer(stringArray))
-	stringIndex := stringPointer
-	pointerSize := unsafe.Sizeof(stringPointer)
-	var stringCount uintptr
-	for {
-		if *(*uintptr)(unsafe.Pointer(stringIndex)) == 0 {
-			break
-		}
+// Set object description
+func (d Dataset) SetDescription(desc string) {
+	setDescription(unsafe.Pointer(d.cval), desc)
+}
 
-		stringIndex += pointerSize
-		stringCount++
-	}
+// Set a single metadata item
+func (d Dataset) SetMetadataItem(name, value, domain string) error {
+	return setMetadataItem(unsafe.Pointer(d.cval), name, value, domain)
+}
 
-	stringSlice := make([]string, stringCount)
-	for i := uintptr(0); i < stringCount; i++ {
-		stringIndex = stringPointer + i * pointerSize
-		stringSlice[i] = C.GoString((*C.char)(unsafe.Pointer(stringIndex)))
-	}
-
-	return stringSlice
+// Fetch metadata, typically pass "" for default domain
+func (d Dataset) Metadata(domain string) map[string]string {
+	return metadata(unsafe.Pointer(d.cval), domain)
 }
 
 /* ==================================================================== */
@@ -1832,3 +1764,67 @@ func FlushCacheBlock() bool {
 // Unimplemented: DecToDMS
 // Unimplemented: PackedDMSToDec
 // Unimplemented: DecToPackedDMS
+
+/* -------------------------------------------------------------------- */
+/*      Generic metadata functions.                                     */
+/* -------------------------------------------------------------------- */
+
+func setMetadataItem(object unsafe.Pointer, name, value, domain string) error {
+	c_name := C.CString(name)
+	defer C.free(unsafe.Pointer(c_name))
+
+	c_value := C.CString(value)
+	defer C.free(unsafe.Pointer(c_value))
+
+	c_domain := C.CString(domain)
+	defer C.free(unsafe.Pointer(c_domain))
+
+	err := C.GDALSetMetadataItem((C.GDALMajorObjectH)(object), c_name, c_value, c_domain)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
+}
+
+func metadata(object unsafe.Pointer, domain string) map[string]string {
+	c_domain := C.CString(domain)
+	defer C.free(unsafe.Pointer(c_domain))
+
+	stringList := C.GDALGetMetadata((C.GDALMajorObjectH)(object), c_domain)
+	if stringList == nil {
+		return nil
+	}
+
+	stringCount := C.CSLCount(stringList)
+	metadata := make(map[string]string, stringCount)
+
+	var nameBuffer []byte
+	for i := (C.int)(0); i < stringCount; i++ {
+		cPair := C.CSLGetField(stringList, i)
+		totalLength := C.strlen(cPair) + 1 // add one for null terminator
+		if int(totalLength) > len(nameBuffer) {
+			nameBuffer = make([]byte, totalLength)
+		}
+
+		namePointer := (*C.char)(unsafe.Pointer(&nameBuffer[0]))
+		cValue := C.CPLParseNameValue(cPair, &namePointer)
+
+		name := C.GoString(namePointer)
+		value := C.GoString(cValue)
+		metadata[name] = value
+	}
+
+	return metadata
+}
+
+func description(object unsafe.Pointer) string {
+	cString := C.GDALGetDescription((C.GDALMajorObjectH)(object))
+	return C.GoString(cString)
+}
+
+func setDescription(object unsafe.Pointer, desc string) {
+	cDesc := C.CString(desc)
+	defer C.free(unsafe.Pointer(cDesc))
+	C.GDALSetDescription((C.GDALMajorObjectH)(object), cDesc)
+}
