@@ -36,7 +36,11 @@ func (sr SpatialReference) FromWKT(wkt string) error {
 	cString := C.CString(wkt)
 	defer C.free(unsafe.Pointer(cString))
 	err := C.OSRImportFromWkt(sr.cval, &cString)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Export coordinate system to WKT
@@ -62,13 +66,21 @@ func (sr SpatialReference) ToPrettyWKT(simplify bool) (string, error) {
 // Initialize SRS based on EPSG code
 func (sr SpatialReference) FromEPSG(code int) error {
 	err := C.OSRImportFromEPSG(sr.cval, C.int(code))
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Initialize SRS based on EPSG code, using EPSG lat/long ordering
 func (sr SpatialReference) FromEPSGA(code int) error {
 	err := C.OSRImportFromEPSGA(sr.cval, C.int(code))
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Destroy the spatial reference
@@ -108,25 +120,41 @@ func (sr SpatialReference) Release() {
 // Validate spatial reference tokens
 func (sr SpatialReference) Validate() error {
 	err := C.OSRValidate(sr.cval)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Correct parameter ordering to match CT specification
 func (sr SpatialReference) FixupOrdering() error {
 	err := C.OSRFixupOrdering(sr.cval)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Fix up spatial reference as needed
 func (sr SpatialReference) Fixup() error {
 	err := C.OSRFixup(sr.cval)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Strip OGC CT parameters
 func (sr SpatialReference) StripCTParams() error {
 	err := C.OSRStripCTParms(sr.cval)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Import PROJ.4 coordinate string
@@ -134,15 +162,23 @@ func (sr SpatialReference) FromProj4(input string) error {
 	cString := C.CString(input)
 	defer C.free(unsafe.Pointer(cString))
 	err := C.OSRImportFromProj4(sr.cval, cString)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Export coordinate system in PROJ.4 format
 func (sr SpatialReference) ToProj4() (string, error) {
 	var p *C.char
 	err := C.OSRExportToProj4(sr.cval, &p)
+	if err != 0 {
+		return "", error(err)
+	}
+
 	proj4 := C.GoString(p)
-	return proj4, error(err)
+	return proj4, nil
 }
 
 // Import coordinate system from ESRI .prj formats
@@ -150,7 +186,11 @@ func (sr SpatialReference) FromESRI(input string) error {
 	cString := C.CString(input)
 	defer C.free(unsafe.Pointer(cString))
 	err := C.OSRImportFromProj4(sr.cval, cString)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Import coordinate system from PCI projection definition
@@ -165,7 +205,11 @@ func (sr SpatialReference) FromPCI(proj, units string, params []float64) error {
 		cProj,
 		cUnits,
 		(*C.double)(unsafe.Pointer(&params[0])))
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Import coordinate system from USGS projection definition
@@ -176,7 +220,11 @@ func (sr SpatialReference) FromUSGS(projsys, zone int, params []float64, datum i
 		C.long(zone),
 		(*C.double)(unsafe.Pointer(&params[0])),
 		C.long(datum))
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Import coordinate system from XML format (GML only currently)
@@ -184,7 +232,11 @@ func (sr SpatialReference) FromXML(xml string) error {
 	cXml := C.CString(xml)
 	defer C.free(unsafe.Pointer(cXml))
 	err := C.OSRImportFromXML(sr.cval, cXml)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Import coordinate system from ERMapper projection definitions
@@ -197,7 +249,11 @@ func (sr SpatialReference) FromERM(proj, datum, units string) error {
 	defer C.free(unsafe.Pointer(cUnits))
 
 	err := C.OSRImportFromERM(sr.cval, cProj, cDatum, cUnits)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Import coordinate system from a URL
@@ -205,19 +261,32 @@ func (sr SpatialReference) FromURL(url string) error {
 	cURL := C.CString(url)
 	defer C.free(unsafe.Pointer(cURL))
 	err := C.OSRImportFromXML(sr.cval, cURL)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Export coordinate system in PCI format
 func (sr SpatialReference) ToPCI() (proj, units string, params []float64, errVal error) {
 	var p, u *C.char
 	err := C.OSRExportToPCI(sr.cval, &p, &u, (**C.double)(unsafe.Pointer(&params[0])))
+	if err != 0 {
+		return "", "", nil, error(err)
+	}
+
+	proj = C.GoString(p)
+	C.free(unsafe.Pointer(p))
+
+	units = C.GoString(u)
+	C.free(unsafe.Pointer(u))
+
 	header := (*reflect.SliceHeader)((unsafe.Pointer(&params)))
 	header.Cap = 17
 	header.Len = 17
-	defer C.free(unsafe.Pointer(p))
-	defer C.free(unsafe.Pointer(u))
-	return C.GoString(p), C.GoString(u), params, error(err)
+
+	return proj, units, params, nil
 }
 
 // Export coordinate system to USGS GCTP projection definition
@@ -228,28 +297,42 @@ func (sr SpatialReference) ToUSGS() (proj, zone int, params []float64, datum int
 		(*C.long)(unsafe.Pointer(&zone)),
 		(**C.double)(unsafe.Pointer(&params[0])),
 		(*C.long)(unsafe.Pointer(&datum)))
+	if err != 0 {
+		return proj, zone, nil, datum, error(err)
+	}
 
 	header := (*reflect.SliceHeader)((unsafe.Pointer(&params)))
 	header.Cap = 15
 	header.Len = 15
 
-	return proj, zone, params, datum, error(err)
+	return proj, zone, params, datum, nil
 }
 
 // Export coordinate system in XML format
 func (sr SpatialReference) ToXML() (xml string, errVal error) {
 	var x *C.char
 	err := C.OSRExportToXML(sr.cval, &x, nil)
-	defer C.free(unsafe.Pointer(x))
-	return C.GoString(x), error(err)
+	if err != 0 {
+		return "", error(err)
+	}
+
+	xml = C.GoString(x)
+	C.free(unsafe.Pointer(x))
+
+	return C.GoString(x), nil
 }
 
 // Export coordinate system in Mapinfo style CoordSys format
 func (sr SpatialReference) ToMICoordSys() (output string, errVal error) {
 	var x *C.char
 	err := C.OSRExportToMICoordSys(sr.cval, &x)
-	defer C.free(unsafe.Pointer(x))
-	return C.GoString(x), error(err)
+	if err != 0 {
+		return "", error(err)
+	}
+
+	output = C.GoString(x)
+	C.free(unsafe.Pointer(x))
+	return output, error(err)
 }
 
 // Export coordinate system in ERMapper format
@@ -258,13 +341,21 @@ func (sr SpatialReference) ToMICoordSys() (output string, errVal error) {
 // Convert in place to ESRI WKT format
 func (sr SpatialReference) MorphToESRI() error {
 	err := C.OSRMorphToESRI(sr.cval)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Convert in place from ESRI WKT format
 func (sr SpatialReference) MorphFromESRI() error {
 	err := C.OSRMorphFromESRI(sr.cval)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Fetch indicated attribute of named node
@@ -282,7 +373,11 @@ func (sr SpatialReference) SetAttrValue(path, value string) error {
 	cValue := C.CString(value)
 	defer C.free(unsafe.Pointer(cValue))
 	err := C.OSRSetAttrValue(sr.cval, cPath, cValue)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set the angular units for the geographic coordinate system
@@ -290,7 +385,11 @@ func (sr SpatialReference) SetAngularUnits(units string, radians float64) error 
 	cUnits := C.CString(units)
 	defer C.free(unsafe.Pointer(cUnits))
 	err := C.OSRSetAngularUnits(sr.cval, cUnits, C.double(radians))
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Fetch the angular units for the geographic coordinate system
@@ -306,7 +405,11 @@ func (sr SpatialReference) SetLinearUnits(name string, toMeters float64) error {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 	err := C.OSRSetLinearUnits(sr.cval, cName, C.double(toMeters))
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set the linear units for the target node
@@ -316,7 +419,11 @@ func (sr SpatialReference) SetTargetLinearUnits(target, units string, toMeters f
 	cUnits := C.CString(units)
 	defer C.free(unsafe.Pointer(cUnits))
 	err := C.OSRSetTargetLinearUnits(sr.cval, cTarget, cUnits, C.double(toMeters))
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set the linear units for the target node and update all existing linear parameters
@@ -324,7 +431,11 @@ func (sr SpatialReference) SetLinearUnitsAndUpdateParameters(name string, toMete
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 	err := C.OSRSetLinearUnitsAndUpdateParameters(sr.cval, cName, C.double(toMeters))
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Fetch linear projection units
@@ -412,7 +523,11 @@ func (sr SpatialReference) SetLocalCS(name string) error {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 	err := C.OSRSetLocalCS(sr.cval, cName)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set the user visible projected CS name
@@ -420,7 +535,11 @@ func (sr SpatialReference) SetProjectedCS(name string) error {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 	err := C.OSRSetProjCS(sr.cval, cName)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set the user visible geographic CS name
@@ -428,7 +547,11 @@ func (sr SpatialReference) SetGeocentricCS(name string) error {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 	err := C.OSRSetGeocCS(sr.cval, cName)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set geographic CS based on well known name
@@ -436,7 +559,11 @@ func (sr SpatialReference) SetWellKnownGeographicCS(name string) error {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 	err := C.OSRSetWellKnownGeogCS(sr.cval, cName)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set spatial reference from various text formats
@@ -444,13 +571,21 @@ func (sr SpatialReference) SetFromUserInput(name string) error {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 	err := C.OSRSetFromUserInput(sr.cval, cName)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Copy geographic CS from another spatial reference
 func (sr SpatialReference) CopyGeographicCSFrom(other SpatialReference) error {
 	err := C.OSRCopyGeogCSFrom(sr.cval, other.cval)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set the Bursa-Wolf conversion to WGS84
@@ -464,13 +599,21 @@ func (sr SpatialReference) SetTOWGS84(dx, dy, dz, ex, ey, ez, ppm float64) error
 		C.double(ey),
 		C.double(ez),
 		C.double(ppm))
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Fetch the TOWGS84 parameters if available
 func (sr SpatialReference) TOWGS84() (coeff [7]float64, errVal error) {
 	err := C.OSRGetTOWGS84(sr.cval, (*C.double)(unsafe.Pointer(&coeff[0])), 7)
-	return coeff, error(err)
+	if err != 0 {
+		return coeff, error(err)
+	}
+
+	return coeff, nil
 }
 
 // Setup a compound coordinate system
@@ -481,7 +624,11 @@ func (sr SpatialReference) SetCompoundCS(
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 	err := C.OSRSetCompoundCS(sr.cval, cName, horizontal.cval, vertical.cval)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set geographic coordinate system
@@ -514,7 +661,11 @@ func (sr SpatialReference) SetGeographicCS(
 		C.double(offset),
 		cAngularUnits,
 		C.double(toRadians))
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set up the vertical coordinate system
@@ -524,28 +675,44 @@ func (sr SpatialReference) SetVerticalCS(csName, datumName string, datumType int
 	cDatumName := C.CString(datumName)
 	defer C.free(unsafe.Pointer(cDatumName))
 	err := C.OSRSetVertCS(sr.cval, cCSName, cDatumName, C.int(datumType))
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Get spheroid semi-major axis
 func (sr SpatialReference) SemiMajorAxis() (float64, error) {
 	var err C.OGRErr
 	axis := C.OSRGetSemiMajor(sr.cval, &err)
-	return float64(axis), error(err)
+	if err != 0 {
+		return float64(axis), error(err)
+	}
+
+	return float64(axis), nil
 }
 
 // Get spheroid semi-minor axis
 func (sr SpatialReference) SemiMinorAxis() (float64, error) {
 	var err C.OGRErr
 	axis := C.OSRGetSemiMinor(sr.cval, &err)
-	return float64(axis), error(err)
+	if err != 0 {
+		return float64(axis), error(err)
+	}
+
+	return float64(axis), nil
 }
 
 // Get spheroid inverse flattening axis
 func (sr SpatialReference) InverseFlattening() (float64, error) {
 	var err C.OGRErr
 	flat := C.OSRGetInvFlattening(sr.cval, &err)
-	return float64(flat), error(err)
+	if err != 0 {
+		return float64(flat), error(err)
+	}
+
+	return float64(flat), nil
 }
 
 // Sets the authority for a node
@@ -555,7 +722,11 @@ func (sr SpatialReference) SetAuthority(target, authority string, code int) erro
 	cAuthority := C.CString(authority)
 	defer C.free(unsafe.Pointer(cAuthority))
 	err := C.OSRSetAuthority(sr.cval, cTarget, cAuthority, C.int(code))
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Get the authority code for a node
@@ -579,7 +750,11 @@ func (sr SpatialReference) SetProjectionByName(name string) error {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 	err := C.OSRSetProjection(sr.cval, cName)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set a projection parameter value
@@ -587,7 +762,11 @@ func (sr SpatialReference) SetProjectionParameter(name string, value float64) er
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 	err := C.OSRSetProjParm(sr.cval, cName, C.double(value))
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Fetch a projection parameter value
@@ -596,7 +775,11 @@ func (sr SpatialReference) ProjectionParameter(name string, defaultValue float64
 	defer C.free(unsafe.Pointer(cName))
 	var err C.OGRErr
 	value := C.OSRGetProjParm(sr.cval, cName, C.double(defaultValue), &err)
-	return float64(value), error(err)
+	if err != 0 {
+		return float64(value), error(err)
+	}
+
+	return float64(value), nil
 }
 
 // Set a projection parameter with a normalized value
@@ -604,7 +787,11 @@ func (sr SpatialReference) SetNormalizedProjectionParameter(name string, value f
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 	err := C.OSRSetNormProjParm(sr.cval, cName, C.double(value))
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Fetch a normalized projection parameter value
@@ -615,13 +802,21 @@ func (sr SpatialReference) NormalizedProjectionParameter(
 	defer C.free(unsafe.Pointer(cName))
 	var err C.OGRErr
 	value := C.OSRGetProjParm(sr.cval, cName, C.double(defaultValue), &err)
-	return float64(value), error(err)
+	if err != 0 {
+		return float64(value), error(err)
+	}
+
+	return float64(value), nil
 }
 
 // Set UTM projection definition
 func (sr SpatialReference) SetUTM(zone int, north bool) error {
 	err := C.OSRSetUTM(sr.cval, C.int(zone), BoolToCInt(north))
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Get UTM zone information
@@ -634,7 +829,11 @@ func (sr SpatialReference) UTMZone() (zone int, north bool) {
 // Set State Plane projection definition
 func (sr SpatialReference) SetStatePlane(zone int, nad83 bool) error {
 	err := C.OSRSetStatePlane(sr.cval, C.int(zone), BoolToCInt(nad83))
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set State Plane projection definition
@@ -652,13 +851,21 @@ func (sr SpatialReference) SetStatePlaneWithUnits(
 		BoolToCInt(nad83),
 		cUnitName,
 		C.double(factor))
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set EPSG authority info if possible
 func (sr SpatialReference) AutoIdentifyEPSG() error {
 	err := C.OSRAutoIdentifyEPSG(sr.cval)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Return true if EPSG feels this coordinate system should be treated as having lat/long coordinate ordering
@@ -683,7 +890,11 @@ func (sr SpatialReference) SetACEA(
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to Azimuthal Equidistant
@@ -695,7 +906,11 @@ func (sr SpatialReference) SetAE(centerLat, centerLong, falseEasting, falseNorth
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to Bonne
@@ -707,7 +922,11 @@ func (sr SpatialReference) SetBonne(standardParallel, centralMeridian, falseEast
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to Cylindrical Equal Area
@@ -719,7 +938,11 @@ func (sr SpatialReference) SetCEA(stdp1, centralMeridian, falseEasting, falseNor
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to Cassini-Soldner
@@ -731,7 +954,11 @@ func (sr SpatialReference) SetCS(centerLat, centerLong, falseEasting, falseNorth
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to Equidistant Conic
@@ -747,7 +974,11 @@ func (sr SpatialReference) SetEC(
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to Eckert I-VI
@@ -759,7 +990,11 @@ func (sr SpatialReference) SetEckert(variation int, centralMeridian, falseEastin
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to Equirectangular
@@ -773,7 +1008,11 @@ func (sr SpatialReference) SetEquirectangular(
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to Equirectangular (generalized form)
@@ -788,7 +1027,11 @@ func (sr SpatialReference) SetEquirectangularGeneralized(
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to Gall Stereographic
@@ -799,7 +1042,11 @@ func (sr SpatialReference) SetGS(centralMeridian, falseEasting, falseNorthing fl
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to Goode Homolosine
@@ -810,13 +1057,21 @@ func (sr SpatialReference) SetGH(centralMeridian, falseEasting, falseNorthing fl
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to Interrupted Goode Homolosine
 func (sr SpatialReference) SetIGH() error {
 	err := C.OSRSetIGH(sr.cval)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to GEOS - Geostationary Satellite View
@@ -830,7 +1085,11 @@ func (sr SpatialReference) SetGEOS(
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to Gauss Schreiber Transverse Mercator
@@ -845,7 +1104,11 @@ func (sr SpatialReference) SetGSTM(
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to gnomonic
@@ -859,7 +1122,11 @@ func (sr SpatialReference) SetGnomonic(
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to Hotine Oblique Mercator projection using azimuth angle
@@ -876,7 +1143,11 @@ func (sr SpatialReference) SetHOM(
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to Hotine Oblique Mercator projection using two points on projection centerline
@@ -894,7 +1165,11 @@ func (sr SpatialReference) SetHOM2PNO(
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to International Map of the World Polyconic
@@ -909,7 +1184,11 @@ func (sr SpatialReference) SetIWMPolyconic(
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to Krovak Oblique Conic Conformal
@@ -926,7 +1205,11 @@ func (sr SpatialReference) SetKrovak(
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to Lambert Azimuthal Equal Area
@@ -940,7 +1223,11 @@ func (sr SpatialReference) SetLAEA(
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to Lambert Conformal Conic
@@ -956,7 +1243,11 @@ func (sr SpatialReference) SetLCC(
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to Lambert Conformal Conic (1 standard parallel)
@@ -971,7 +1262,11 @@ func (sr SpatialReference) SetLCC1SP(
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to Lambert Conformal Conic (Belgium)
@@ -987,7 +1282,11 @@ func (sr SpatialReference) SetLCCB(
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to Miller Cylindrical
@@ -1001,7 +1300,11 @@ func (sr SpatialReference) SetMC(
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to Mercator
@@ -1016,7 +1319,11 @@ func (sr SpatialReference) SetMercator(
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set tp Mollweide
@@ -1029,7 +1336,11 @@ func (sr SpatialReference) SetMollweide(
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to New Zealand Map Grid
@@ -1043,7 +1354,11 @@ func (sr SpatialReference) SetNZMG(
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to Oblique Stereographic
@@ -1058,7 +1373,11 @@ func (sr SpatialReference) SetOS(
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to Orthographic
@@ -1072,7 +1391,11 @@ func (sr SpatialReference) SetOrthographic(
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to Polyconic
@@ -1086,7 +1409,11 @@ func (sr SpatialReference) SetPolyconic(
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to Polar Stereographic
@@ -1101,7 +1428,11 @@ func (sr SpatialReference) SetPS(
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to Robinson
@@ -1114,7 +1445,11 @@ func (sr SpatialReference) SetRobinson(
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to Sinusoidal
@@ -1127,7 +1462,11 @@ func (sr SpatialReference) SetSinusoidal(
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to Stereographic
@@ -1142,7 +1481,11 @@ func (sr SpatialReference) SetStereographic(
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to Swiss Oblique Cylindrical
@@ -1156,7 +1499,11 @@ func (sr SpatialReference) SetSOC(
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to Transverse Mercator
@@ -1171,7 +1518,11 @@ func (sr SpatialReference) SetTM(
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to Transverse Mercator variant
@@ -1189,7 +1540,11 @@ func (sr SpatialReference) SetTMVariant(
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to Tunisia Mining Grid
@@ -1203,7 +1558,11 @@ func (sr SpatialReference) SetTMG(
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to Transverse Mercator (South Oriented)
@@ -1218,7 +1577,11 @@ func (sr SpatialReference) SetTMSO(
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Set to VanDerGrinten
@@ -1231,7 +1594,11 @@ func (sr SpatialReference) SetVDG(
 		C.double(falseEasting),
 		C.double(falseNorthing),
 	)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+
+	return nil
 }
 
 // Cleanup cached SRS related memory
