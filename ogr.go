@@ -11,6 +11,7 @@ package gdal
 */
 import "C"
 import (
+	"errors"
 	"reflect"
 	"time"
 	"unsafe"
@@ -319,9 +320,14 @@ func (geom Geometry) FromWKT(wkt string) error {
 // Fetch geometry as WKT
 func (geom Geometry) ToWKT() (string, error) {
 	var p *C.char
+	// GDAL docs say this *always* returns OGRERR_NONE (0)
 	err := C.OGR_G_ExportToWkt(geom.cval, &p)
+	if err != 0 {
+		return "", error(err)
+	}
 	wkt := C.GoString(p)
-	return wkt, error(err)
+	defer C.OGRFree(unsafe.Pointer(p))
+	return wkt, nil
 }
 
 // Fetch geometry type
@@ -1051,7 +1057,7 @@ func (feature Feature) IsFieldSet(index int) bool {
 }
 
 // Clear a field and mark it as unset
-func (feature Feature) UnnsetField(index int) {
+func (feature Feature) UnsetField(index int) {
 	C.OGR_F_UnsetField(feature.cval, C.int(index))
 }
 
@@ -1267,7 +1273,7 @@ func (this Feature) SetFromWithMap(other Feature, forgiving int, fieldMap []int)
 }
 
 // Fetch style string for this feature
-func (feature Feature) StlyeString() string {
+func (feature Feature) StyleString() string {
 	style := C.OGR_F_GetStyleString(feature.cval)
 	return C.GoString(style)
 }
@@ -1330,10 +1336,14 @@ func (layer Layer) ResetReading() {
 	C.OGR_L_ResetReading(layer.cval)
 }
 
-// Fetch the next available feature from this layer
-func (layer Layer) NextFeature() Feature {
+// Fetch the next available feature from this layer; call Destroy() on it when done; returns ok =
+// false if there are no more features in the layer.
+func (layer Layer) NextFeature() (f Feature, ok bool) {
 	feature := C.OGR_L_GetNextFeature(layer.cval)
-	return Feature{feature}
+	if feature == nil {
+		return Feature{}, false
+	}
+	return Feature{feature}, true
 }
 
 // Move read cursor to the provided index
@@ -1514,12 +1524,15 @@ type DataSource struct {
 	cval C.OGRDataSourceH
 }
 
-// Open a file / data source with one of the registered drivers
-func OpenDataSource(name string, update int) DataSource {
+// Open a file / data source with one of the registered drivers; call Release() on it when done
+func OpenDataSource(name string, update int) (DataSource, error) {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 	ds := C.OGROpen(cName, C.int(update), nil)
-	return DataSource{ds}
+	if ds == nil {
+		return DataSource{}, errors.New("Failed to open " + name)
+	}
+	return DataSource{ds}, nil
 }
 
 // Open a shared file / data source with one of the registered drivers
@@ -1533,7 +1546,10 @@ func OpenSharedDataSource(name string, update int) DataSource {
 // Drop a reference to this datasource and destroy if reference is zero
 func (ds DataSource) Release() error {
 	err := C.OGRReleaseDataSource(ds.cval)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+	return nil
 }
 
 // Return the number of opened data sources
