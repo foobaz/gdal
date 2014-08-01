@@ -48,6 +48,14 @@ const (
 	GT_GeometryCollection25D = GeometryType(C.wkbGeometryCollection25D)
 )
 
+// TODO: use binary.{Big|Little}Endian instead or as well as these consts?
+type ByteOrder int
+
+const (
+	BO_XDR = ByteOrder(C.wkbXDR) // big-endian
+	BO_NDR = ByteOrder(C.wkbNDR) // little-endian
+)
+
 /* -------------------------------------------------------------------- */
 /*      Envelope functions                                              */
 /* -------------------------------------------------------------------- */
@@ -301,7 +309,15 @@ func (geom Geometry) FromWKB(wkb []uint8, bytes int) error {
 }
 
 // Convert a geometry to well known binary data
-// Unimplemented: ExportToWkb
+func (geom Geometry) ToWKB(byteOrder ByteOrder) ([]uint8, error) {
+	size := C.OGR_G_WkbSize(geom.cval)
+	wkb := make([]uint8, size)
+	err := C.OGR_G_ExportToWkb(geom.cval, C.OGRwkbByteOrder(byteOrder), (*C.uchar)(unsafe.Pointer(&wkb[0])))
+	if err != 0 {
+		return nil, error(err)
+	}
+	return wkb, nil
+}
 
 // Returns size of related binary representation
 func (geom Geometry) WKBSize() int {
@@ -1006,16 +1022,22 @@ func (feature Feature) SetGeometryDirectly(geom Geometry) error {
 	return error(err)
 }
 
-// Fetch geometry of this feature
-func (feature Feature) Geometry() Geometry {
+// Fetch geometry of this feature, returning ok == false if feature has no geometry (possible in KML)
+func (feature Feature) Geometry() (g Geometry, ok bool) {
 	geom := C.OGR_F_GetGeometryRef(feature.cval)
-	return Geometry{geom}
+	if geom == nil {
+		return Geometry{}, false
+	}
+	return Geometry{geom}, true
 }
 
-// Fetch geometry of this feature and assume ownership
-func (feature Feature) StealGeometry() Geometry {
+// Fetch geometry of this feature and assume ownership, returning ok == false if feature has no geometry (possible in KML)
+func (feature Feature) StealGeometry() (g Geometry, ok bool) {
 	geom := C.OGR_F_StealGeometry(feature.cval)
-	return Geometry{geom}
+	if geom == nil {
+		return Geometry{}, false
+	}
+	return Geometry{geom}, true
 }
 
 // Duplicate feature
