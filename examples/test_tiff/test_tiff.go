@@ -16,8 +16,7 @@ func main() {
 	fmt.Printf("Filename: %s\n", filename)
 
 	fmt.Printf("Allocating buffer\n")
-	var buffer [256 * 256]uint8
-	//	buffer := make([]uint8, 256 * 256)
+	buffer := make([]uint8, 256*256) // need to be slice type for the IO switch to recognize
 
 	fmt.Printf("Computing values\n")
 	for x := 0; x < 256; x++ {
