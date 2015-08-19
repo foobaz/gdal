@@ -438,13 +438,19 @@ func (geom Geometry) SetSpatialReference(spatialRef SpatialReference) {
 // Apply coordinate transformation to geometry
 func (geom Geometry) Transform(ct CoordinateTransform) error {
 	err := C.OGR_G_Transform(geom.cval, ct.cval)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+	return nil
 }
 
 // Transform geometry to new spatial reference system
 func (geom Geometry) TransformTo(sr SpatialReference) error {
 	err := C.OGR_G_TransformTo(geom.cval, sr.cval)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+	return nil
 }
 
 // Simplify the geometry
@@ -700,19 +706,28 @@ func (geom Geometry) Geometry(index int) Geometry {
 // Add a geometry to a geometry container
 func (geom Geometry) AddGeometry(other Geometry) error {
 	err := C.OGR_G_AddGeometry(geom.cval, other.cval)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+	return nil
 }
 
 // Add a geometry to a geometry container and assign ownership to that container
 func (geom Geometry) AddGeometryDirectly(other Geometry) error {
 	err := C.OGR_G_AddGeometryDirectly(geom.cval, other.cval)
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+	return nil
 }
 
 // Remove a geometry from the geometry container
 func (geom Geometry) RemoveGeometry(index int, delete bool) error {
 	err := C.OGR_G_RemoveGeometry(geom.cval, C.int(index), BoolToCInt(delete))
-	return error(err)
+	if err != 0 {
+		return error(err)
+	}
+	return nil
 }
 
 // Build a polygon / ring from a set of lines
@@ -725,7 +740,10 @@ func (geom Geometry) BuildPolygonFromEdges(autoClose bool, tolerance float64) (G
 		C.double(tolerance),
 		&err,
 	)
-	return Geometry{newGeom}, error(err)
+	if err != 0 {
+		return Geometry{}, error(err)
+	}
+	return Geometry{newGeom}, nil
 }
 
 /* -------------------------------------------------------------------- */
