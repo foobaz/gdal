@@ -241,6 +241,54 @@ func (src RasterBand) SieveFilter(
 /* Warp functions                                */
 /* --------------------------------------------- */
 
+type WarpOptions *C.GDALWarpOptions 
+
+// Reproject image
+func (src Dataset) ReprojectImage(
+	srcProjWKT string,
+	dst Dataset,
+	dstProjWKT string,
+	resampleAlg ResampleAlg,
+	memLimit, maxError float64,
+	progress ProgressFunc,
+	data interface{},
+	options WarpOptions,
+) error {
+	var pf C.GDALProgressFunc
+	var pa unsafe.Pointer
+	if progress != nil {
+		pf = C.goGDALProgressFuncProxyB()
+		pa = unsafe.Pointer(&goGDALProgressFuncProxyArgs{progress, data})
+	}
+	
+	var c_srcWKT, c_dstWKT *C.char
+	if srcProjWKT != "" {
+		c_srcWKT = C.CString(srcProjWKT)
+		defer C.free(unsafe.Pointer(c_srcWKT))
+	}
+	if dstProjWKT != "" {
+		c_dstWKT = C.CString(dstProjWKT)
+		defer C.free(unsafe.Pointer(c_dstWKT))
+	}
+
+	err := C.GDALReprojectImage(
+		src.cval,
+		c_srcWKT,
+		dst.cval,
+		c_dstWKT,
+		C.GDALResampleAlg(resampleAlg),
+		C.double(memLimit),
+		C.double(maxError),
+		pf, 
+		pa,
+		options,
+	)
+	if err != 0 {
+		return error(err)
+	}
+	return nil
+}
+
 //Unimplemented: CreateGenImgProjTransformer
 //Unimplemented: CreateGenImgProjTransformer2
 //Unimplemented: CreateGenImgProjTransformer3
