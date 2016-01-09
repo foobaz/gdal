@@ -15,7 +15,6 @@ import "C"
 import (
 	"errors"
 	"fmt"
-	"reflect"
 	"unsafe"
 )
 
@@ -1273,76 +1272,6 @@ func (rasterBand RasterBand) FlushCache() {
 	C.GDALFlushRasterCache(rasterBand.cval)
 }
 
-// Compute raster histogram
-func (rb RasterBand) Histogram(
-	min, max float64,
-	buckets int,
-	includeOutOfRange, approxOK int,
-	progress ProgressFunc,
-	data interface{},
-) ([]int, error) {
-	arg := &goGDALProgressFuncProxyArgs{
-		progress, data,
-	}
-
-	histogram := make([]int, buckets)
-
-	if err := C.GDALGetRasterHistogram(
-		rb.cval,
-		C.double(min),
-		C.double(max),
-		C.int(buckets),
-		(*C.int)(unsafe.Pointer(&histogram[0])),
-		C.int(includeOutOfRange),
-		C.int(approxOK),
-		C.goGDALProgressFuncProxyB(),
-		unsafe.Pointer(arg),
-	).Err(); err != nil {
-		return nil, err
-	} else {
-		return histogram, nil
-	}
-}
-
-// Fetch default raster histogram
-func (rb RasterBand) DefaultHistogram(
-	force int,
-	progress ProgressFunc,
-	data interface{},
-) (min, max float64, buckets int, histogram []int, err error) {
-	arg := &goGDALProgressFuncProxyArgs{
-		progress, data,
-	}
-
-	var cHistogram *C.int
-
-	err = C.GDALGetDefaultHistogram(
-		rb.cval,
-		(*C.double)(&min),
-		(*C.double)(&max),
-		(*C.int)(unsafe.Pointer(&buckets)),
-		&cHistogram,
-		C.int(force),
-		C.goGDALProgressFuncProxyB(),
-		unsafe.Pointer(arg),
-	).Err()
-
-	sliceHeader := (*reflect.SliceHeader)(unsafe.Pointer(&histogram))
-	sliceHeader.Cap = buckets
-	sliceHeader.Len = buckets
-	sliceHeader.Data = uintptr(unsafe.Pointer(cHistogram))
-
-	return min, max, buckets, histogram, err
-}
-
-// Set default raster histogram
-// Unimplemented: SetDefaultHistogram
-
-// Unimplemented: GetRandomRasterSample
-
-// Fetch best sampling overviews
-// Unimplemented: GetRasterSampleOverview
-
 // Fill this band with a constant value
 func (rasterBand RasterBand) Fill(real, imaginary float64) error {
 	return C.GDALFillRaster(rasterBand.cval, C.double(real), C.double(imaginary)).Err()
@@ -1656,4 +1585,63 @@ func GetCacheUsed() int {
 func FlushCacheBlock() bool {
 	flushed := C.GDALFlushCacheBlock()
 	return flushed != 0
+}
+
+/* -------------------------------------------------------------------- */
+/*      Generic metadata functions.                                     */
+/* -------------------------------------------------------------------- */
+
+func setMetadataItem(object unsafe.Pointer, name, value, domain string) error {
+	c_name := C.CString(name)
+	defer C.free(unsafe.Pointer(c_name))
+
+	c_value := C.CString(value)
+	defer C.free(unsafe.Pointer(c_value))
+
+	c_domain := C.CString(domain)
+	defer C.free(unsafe.Pointer(c_domain))
+
+	return C.GDALSetMetadataItem((C.GDALMajorObjectH)(object), c_name, c_value, c_domain).Err()
+}
+
+func metadata(object unsafe.Pointer, domain string) map[string]string {
+	c_domain := C.CString(domain)
+	defer C.free(unsafe.Pointer(c_domain))
+
+	stringList := C.GDALGetMetadata((C.GDALMajorObjectH)(object), c_domain)
+	if stringList == nil {
+		return nil
+	}
+
+	stringCount := C.CSLCount(stringList)
+	metadata := make(map[string]string, stringCount)
+
+	var nameBuffer []byte
+	for i := (C.int)(0); i < stringCount; i++ {
+		cPair := C.CSLGetField(stringList, i)
+		totalLength := C.strlen(cPair) + 1 // add one for null terminator
+		if int(totalLength) > len(nameBuffer) {
+			nameBuffer = make([]byte, totalLength)
+		}
+
+		namePointer := (*C.char)(unsafe.Pointer(&nameBuffer[0]))
+		cValue := C.CPLParseNameValue(cPair, &namePointer)
+
+		name := C.GoString(namePointer)
+		value := C.GoString(cValue)
+		metadata[name] = value
+	}
+
+	return metadata
+}
+
+func description(object unsafe.Pointer) string {
+	cString := C.GDALGetDescription((C.GDALMajorObjectH)(object))
+	return C.GoString(cString)
+}
+
+func setDescription(object unsafe.Pointer, desc string) {
+	cDesc := C.CString(desc)
+	defer C.free(unsafe.Pointer(cDesc))
+	C.GDALSetDescription((C.GDALMajorObjectH)(object), cDesc)
 }

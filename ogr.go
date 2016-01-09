@@ -326,12 +326,6 @@ func (geom Geometry) ToWKB() ([]uint8, error) {
 	err := C.OGR_G_ExportToWkb(geom.cval, C.OGRwkbByteOrder(C.wkbNDR), cString).Err()
 	return b, err
 }
-	b := make([]uint8, geom.WKBSize())
-	cString := (*C.uchar)(unsafe.Pointer(&b[0]))
-	err := C.OGR_G_ExportToWkb(geom.cval, C.OGRwkbByteOrder(C.wkbNDR), cString).Err()
-	return b, err
->>>>>>> upstream/master
-}
 
 // Returns size of related binary representation
 func (geom Geometry) WKBSize() int {
@@ -1271,7 +1265,7 @@ func (feature Feature) FID() int {
 
 // Set feature identifier
 func (feature Feature) SetFID(fid int) error {
-	return C.OGR_F_SetFID(feature.cval, C.long(fid)).Err()
+	return C.OGR_F_SetFID(feature.cval, C.GIntBig(fid)).Err()
 }
 
 // Unimplemented: DumpReadable
@@ -1366,12 +1360,12 @@ func (layer Layer) NextFeature() (f Feature, ok bool) {
 
 // Move read cursor to the provided index
 func (layer Layer) SetNextByIndex(index int) error {
-	return C.OGR_L_SetNextByIndex(layer.cval, C.long(index)).Err()
+	return C.OGR_L_SetNextByIndex(layer.cval, C.GIntBig(index)).Err()
 }
 
 // Fetch a feature by its index
 func (layer Layer) Feature(index int) Feature {
-	feature := C.OGR_L_GetFeature(layer.cval, C.long(index))
+	feature := C.OGR_L_GetFeature(layer.cval, C.GIntBig(index))
 	return Feature{feature}
 }
 
@@ -1387,7 +1381,7 @@ func (layer Layer) Create(feature Feature) error {
 
 // Delete indicated feature from layer
 func (layer Layer) Delete(index int) error {
-	return C.OGR_L_DeleteFeature(layer.cval, C.long(index)).Err()
+	return C.OGR_L_DeleteFeature(layer.cval, C.GIntBig(index)).Err()
 }
 
 // Fetch the schema information for this layer

@@ -256,7 +256,7 @@ func (src Dataset) ReprojectImage(
 		pf = C.goGDALProgressFuncProxyB()
 		pa = unsafe.Pointer(&goGDALProgressFuncProxyArgs{progress, data})
 	}
-	
+
 	var c_srcWKT, c_dstWKT *C.char
 	if srcProjWKT != "" {
 		c_srcWKT = C.CString(srcProjWKT)
@@ -267,7 +267,7 @@ func (src Dataset) ReprojectImage(
 		defer C.free(unsafe.Pointer(c_dstWKT))
 	}
 
-	err := C.GDALReprojectImage(
+	return C.GDALReprojectImage(
 		src.cval,
 		c_srcWKT,
 		dst.cval,
@@ -278,11 +278,7 @@ func (src Dataset) ReprojectImage(
 		pf, 
 		pa,
 		options,
-	)
-	if err != 0 {
-		return error(err)
-	}
-	return nil
+	).Err()
 }
 
 //Unimplemented: CreateGenImgProjTransformer
