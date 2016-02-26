@@ -450,7 +450,6 @@ func (sr SpatialReference) TOWGS84() (coeff [7]float64, errVal error) {
 	return coeff, error(err)
 }
 
-
 // Setup a compound coordinate system
 func (sr SpatialReference) SetCompoundCS(
 	name string,

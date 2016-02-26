@@ -237,7 +237,7 @@ func (src RasterBand) SieveFilter(
 /* Warp functions                                */
 /* --------------------------------------------- */
 
-type WarpOptions *C.GDALWarpOptions 
+type WarpOptions *C.GDALWarpOptions
 
 // Reproject image
 func (src Dataset) ReprojectImage(
@@ -275,7 +275,7 @@ func (src Dataset) ReprojectImage(
 		C.GDALResampleAlg(resampleAlg),
 		C.double(memLimit),
 		C.double(maxError),
-		pf, 
+		pf,
 		pa,
 		options,
 	).Err()

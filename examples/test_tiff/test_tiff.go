@@ -31,7 +31,7 @@ func main() {
 	}
 
 	fmt.Printf("%d drivers available\n", gdal.GetDriverCount())
-	for x:= 0; x < gdal.GetDriverCount(); x++ {
+	for x := 0; x < gdal.GetDriverCount(); x++ {
 		driver := gdal.GetDriver(x)
 		fmt.Printf("%s: %s\n", driver.ShortName(), driver.LongName())
 	}
