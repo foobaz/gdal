@@ -12,11 +12,8 @@ package gdal
 */
 import "C"
 import (
-	"fmt"
 	"unsafe"
 )
-
-var _ = fmt.Println
 
 /* --------------------------------------------- */
 /* Misc functions                                */

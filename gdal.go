@@ -18,8 +18,6 @@ import (
 	"unsafe"
 )
 
-var _ = fmt.Println
-
 func init() {
 	C.GDALAllRegister()
 }
@@ -114,6 +112,26 @@ func (dataType DataType) Union(dataTypeB DataType) DataType {
 	return DataType(
 		C.GDALDataTypeUnion(C.GDALDataType(dataType), C.GDALDataType(dataTypeB)),
 	)
+}
+
+//Safe array conversion
+func IntSliceToCInt(data []int) []C.int {
+	sliceSz := len(data)
+	result := make([]C.int, sliceSz)
+	for i := 0; i < sliceSz; i++ {
+		result[i] = C.int(data[i])
+	}
+	return result
+}
+
+//Safe array conversion
+func CIntSliceToInt(data []C.GUIntBig) []uint64 {
+	sliceSz := len(data)
+	result := make([]uint64, sliceSz)
+	for i := 0; i < sliceSz; i++ {
+		result[i] = uint64(data[i])
+	}
+	return result
 }
 
 // status of the asynchronous stream
@@ -764,7 +782,7 @@ func (dataset Dataset) IO(
 		C.int(bufXSize), C.int(bufYSize),
 		C.GDALDataType(dataType),
 		C.int(bandCount),
-		(*C.int)(unsafe.Pointer(&bandMap[0])),
+		(*C.int)(unsafe.Pointer(&IntSliceToCInt(bandMap)[0])),
 		C.int(pixelSpace), C.int(lineSpace), C.int(bandSpace),
 	).Err()
 }
@@ -792,7 +810,7 @@ func (dataset Dataset) AdviseRead(
 		C.int(bufXSize), C.int(bufYSize),
 		C.GDALDataType(dataType),
 		C.int(bandCount),
-		(*C.int)(unsafe.Pointer(&bandMap[0])),
+		(*C.int)(unsafe.Pointer(&IntSliceToCInt(bandMap)[0])),
 		(**C.char)(unsafe.Pointer(&cOptions[0])),
 	).Err()
 }
@@ -888,9 +906,9 @@ func (dataset Dataset) BuildOverviews(
 		dataset.cval,
 		cResampling,
 		C.int(nOverviews),
-		(*C.int)(unsafe.Pointer(&overviewList[0])),
+		(*C.int)(unsafe.Pointer(&IntSliceToCInt(overviewList)[0])),
 		C.int(nBands),
-		(*C.int)(unsafe.Pointer(&bandList[0])),
+		(*C.int)(unsafe.Pointer(&IntSliceToCInt(bandList)[0])),
 		C.goGDALProgressFuncProxyB(),
 		unsafe.Pointer(arg),
 	).Err()
@@ -1271,6 +1289,77 @@ func (rasterBand RasterBand) ComputeMinMax(approxOK int) (min, max float64) {
 func (rasterBand RasterBand) FlushCache() {
 	C.GDALFlushRasterCache(rasterBand.cval)
 }
+
+// Compute raster histogram
+func (rb RasterBand) Histogram(
+	min, max float64,
+	buckets int,
+	includeOutOfRange, approxOK int,
+	progress ProgressFunc,
+	data interface{},
+) ([]uint64, error) {
+	arg := &goGDALProgressFuncProxyArgs{
+		progress, data,
+	}
+
+	histogram := make([]C.GUIntBig, buckets)
+	var err error
+	if err = C.GDALGetRasterHistogramEx(
+		rb.cval,
+		C.double(min),
+		C.double(max),
+		C.int(buckets),
+		(*C.GUIntBig)(unsafe.Pointer(&histogram[0])),
+		C.int(includeOutOfRange),
+		C.int(approxOK),
+		C.goGDALProgressFuncProxyB(),
+		unsafe.Pointer(arg),
+	).Err(); err != nil {
+		return nil, err
+	} else {
+		return CIntSliceToInt(histogram), nil
+	}
+	return nil, err
+}
+
+// Fetch default raster histogram
+func (rb RasterBand) DefaultHistogram(
+	force int,
+	progress ProgressFunc,
+	data interface{},
+) (min, max float64, buckets int, histogram []uint64, err error) {
+	arg := &goGDALProgressFuncProxyArgs{
+		progress, data,
+	}
+
+	var cHistogram *C.GUIntBig
+
+	err = C.GDALGetDefaultHistogramEx(
+		rb.cval,
+		(*C.double)(&min),
+		(*C.double)(&max),
+		(*C.int)(unsafe.Pointer(&buckets)),
+		&cHistogram,
+		C.int(force),
+		C.goGDALProgressFuncProxyB(),
+		unsafe.Pointer(arg),
+	).Err()
+
+	sliceHeader := (*reflect.SliceHeader)(unsafe.Pointer(&histogram))
+	sliceHeader.Cap = buckets
+	sliceHeader.Len = buckets
+	sliceHeader.Data = uintptr(unsafe.Pointer(cHistogram))
+
+	return min, max, buckets, histogram, err
+}
+
+// Set default raster histogram
+// Unimplemented: SetDefaultHistogram
+
+// Unimplemented: GetRandomRasterSample
+
+// Fetch best sampling overviews
+// Unimplemented: GetRasterSampleOverview
 
 // Fill this band with a constant value
 func (rasterBand RasterBand) Fill(real, imaginary float64) error {
