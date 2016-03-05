@@ -1634,19 +1634,16 @@ func metadata(object unsafe.Pointer, domain string) map[string]string {
 	stringCount := C.CSLCount(stringList)
 	metadata := make(map[string]string, stringCount)
 
-	var nameBuffer []byte
 	for i := (C.int)(0); i < stringCount; i++ {
 		cPair := C.CSLGetField(stringList, i)
-		totalLength := C.strlen(cPair) + 1 // add one for null terminator
-		if int(totalLength) > len(nameBuffer) {
-			nameBuffer = make([]byte, totalLength)
-		}
 
-		namePointer := (*C.char)(unsafe.Pointer(&nameBuffer[0]))
-		cValue := C.CPLParseNameValue(cPair, &namePointer)
+		cName := (*C.char)(nil)
+		cValue := C.CPLParseNameValue(cPair, &cName)
 
-		name := C.GoString(namePointer)
+		name := C.GoString(cName)
+		C.VSIFree(unsafe.Pointer(cName))
 		value := C.GoString(cValue)
+
 		metadata[name] = value
 	}
 
