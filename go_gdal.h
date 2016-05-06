@@ -11,6 +11,7 @@
 #include <cpl_conv.h>
 #include <ogr_srs_api.h>
 #include <cpl_vsi.h>
+#include <cpl_string.h>
 
 // transform GDALProgressFunc to go func
 GDALProgressFunc goGDALProgressFuncProxyB();

@@ -236,6 +236,40 @@ func (src RasterBand) SieveFilter(
 
 type WarpOptions *C.GDALWarpOptions
 
+func CreateWarpOptions() WarpOptions {
+	return WarpOptions(C.GDALCreateWarpOptions())
+}
+
+func DestroyWarpOptions(wo WarpOptions) {
+	C.GDALDestroyWarpOptions(wo)
+}
+
+func SetBandCount(wo WarpOptions, bands int) {
+	wo.nBandCount = C.int(bands)
+}
+
+func SetSrcNoData(wo WarpOptions, noDataVals []complex64) {
+	n := C.int(len(noDataVals))
+	wo.padfSrcNoDataReal = (*C.double)(C.CPLMalloc(C.size_t(n * C.sizeof_double)))
+	wo.padfSrcNoDataImag = (*C.double)(C.CPLMalloc(C.size_t(n * C.sizeof_double)))
+	rp := (*[1 << 30]C.double)(unsafe.Pointer(wo.padfSrcNoDataReal))
+	ip := (*[1 << 30]C.double)(unsafe.Pointer(wo.padfSrcNoDataImag))
+	for i, v := range noDataVals {
+		realPart := real(v)
+		imagPart := imag(v)
+		rp[i] = C.double(realPart)
+		ip[i] = C.double(imagPart)
+	}
+}
+
+func AddNameValue(wo WarpOptions, name, value string) {
+	n := C.CString(name)
+	defer C.free(unsafe.Pointer(n))
+	v := C.CString(value)
+	defer C.free(unsafe.Pointer(v))
+	wo.papszWarpOptions = (**C.char)(unsafe.Pointer(C.CSLSetNameValue((**C.char)(unsafe.Pointer(wo.papszWarpOptions)), n, v)))
+}
+
 // Reproject image
 func (src Dataset) ReprojectImage(
 	srcProjWKT string,

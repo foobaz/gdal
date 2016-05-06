@@ -727,6 +727,23 @@ func (dataset Dataset) AutoCreateWarpedVRT(srcWKT, dstWKT string, resampleAlg Re
 
 }
 
+func (dataset Dataset) AutoCreateWarpedVRTwithWarpOpts(srcWKT, dstWKT string, resampleAlg ResampleAlg, options WarpOptions) (Dataset, error) {
+	c_srcWKT := C.CString(srcWKT)
+	defer C.free(unsafe.Pointer(c_srcWKT))
+	c_dstWKT := C.CString(dstWKT)
+	defer C.free(unsafe.Pointer(c_dstWKT))
+	/*
+
+	 */
+	h := C.GDALAutoCreateWarpedVRT(dataset.cval, c_srcWKT, c_dstWKT, C.GDALResampleAlg(resampleAlg), 0.0, options)
+	d := Dataset{h}
+	if h == nil {
+		return d, fmt.Errorf("AutoCreateWarpedVRT failed")
+	}
+	return d, nil
+
+}
+
 // Unimplemented: GDALBeginAsyncReader
 // Unimplemented: GDALEndAsyncReader
 
