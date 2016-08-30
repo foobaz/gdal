@@ -9,6 +9,22 @@ package gdal
 #cgo darwin pkg-config: gdal
 #cgo windows LDFLAGS: -Lc:/gdal/release-1600-x64/lib -lgdal_i
 #cgo windows CFLAGS: -IC:/gdal/release-1600-x64/include
+
+static inline OGRErr OGR_F_SetFID_fixup( OGRFeatureH f, GIntBig fid ) {
+	return OGR_F_SetFID(f, fid);
+}
+
+static inline OGRErr OGR_L_SetNextByIndex_fixup( OGRLayerH l, GIntBig idx ) {
+	return OGR_L_SetNextByIndex(l, idx);
+}
+
+static inline OGRFeatureH OGR_L_GetFeature_fixup( OGRLayerH l, GIntBig idx ) {
+	return OGR_L_GetFeature(l, idx);
+}
+
+static inline OGRErr OGR_L_DeleteFeature_fixup( OGRLayerH l, GIntBig idx ) {
+	return OGR_L_DeleteFeature(l, idx);
+}
 */
 import "C"
 import (
@@ -1265,7 +1281,7 @@ func (feature Feature) FID() int {
 
 // Set feature identifier
 func (feature Feature) SetFID(fid int) error {
-	return C.OGR_F_SetFID(feature.cval, C.long(fid)).Err()
+	return C.OGR_F_SetFID_fixup(feature.cval, C.GIntBig(fid)).Err()
 }
 
 // Unimplemented: DumpReadable
@@ -1360,12 +1376,12 @@ func (layer Layer) NextFeature() (f Feature, ok bool) {
 
 // Move read cursor to the provided index
 func (layer Layer) SetNextByIndex(index int) error {
-	return C.OGR_L_SetNextByIndex(layer.cval, C.long(index)).Err()
+	return C.OGR_L_SetNextByIndex_fixup(layer.cval, C.GIntBig(index)).Err()
 }
 
 // Fetch a feature by its index
 func (layer Layer) Feature(index int) Feature {
-	feature := C.OGR_L_GetFeature(layer.cval, C.long(index))
+	feature := C.OGR_L_GetFeature_fixup(layer.cval, C.GIntBig(index))
 	return Feature{feature}
 }
 
@@ -1381,7 +1397,7 @@ func (layer Layer) Create(feature Feature) error {
 
 // Delete indicated feature from layer
 func (layer Layer) Delete(index int) error {
-	return C.OGR_L_DeleteFeature(layer.cval, C.long(index)).Err()
+	return C.OGR_L_DeleteFeature_fixup(layer.cval, C.GIntBig(index)).Err()
 }
 
 // Fetch the schema information for this layer
